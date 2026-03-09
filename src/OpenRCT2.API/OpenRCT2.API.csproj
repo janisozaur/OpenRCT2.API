@@ -2,9 +2,10 @@
   <Import Project="..\..\common.props" />
   <PropertyGroup>
     <AssemblyName>openrct2-api</AssemblyName>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
     <IsWebConfigTransformDisabled>true</IsWebConfigTransformDisabled>
+    <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\OpenRCT2.DB\OpenRCT2.DB.csproj" />
