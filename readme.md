@@ -21,7 +21,7 @@ dotnet run
 ```
 
 ## Configuration
-~/.openrct2/api.config.yml:
+.openrct2/api.config.yml:
 ```
 api:
   bind:
