@@ -26,9 +26,8 @@ namespace OpenRCT2.API.Authentication
             IOptionsMonitor<ApiAuthenticationOptions> options,
             ILoggerFactory logger,
             UrlEncoder encoder,
-            ISystemClock clock,
             UserAuthenticationService userAuthenticationService) 
-            : base(options, logger, encoder, clock)
+            : base(options, logger, encoder)
         {
             _userAuthenticationService = userAuthenticationService;
         }

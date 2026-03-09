@@ -2,16 +2,22 @@
 using System.IO;
 using System.IO.Compression;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using OpenRCT2.API.Abstractions;
-using OpenRCT2.API.Extensions;
 
 namespace OpenRCT2.API.Controllers
 {
     public class LocalisationController : Controller
     {
         private static ConcurrentDictionary<int, string> CachedProgressImages = new ConcurrentDictionary<int, string>();
+        private readonly HttpClient _httpClient;
+
+        public LocalisationController(HttpClient httpClient)
+        {
+            _httpClient = httpClient;
+        }
 
         [Route("localisation/status/badges/{languageId}")]
         public async Task<IActionResult> GetBadgeStatusAsync(
@@ -28,7 +34,7 @@ namespace OpenRCT2.API.Controllers
             return Content(progressSvg, MimeTypes.ImageSvgXml);
         }
 
-        private static async Task<string> GetProgressImageAsync(int progress)
+        private async Task<string> GetProgressImageAsync(int progress)
         {
             string svg;
             if (CachedProgressImages.TryGetValue(progress, out svg))
@@ -36,20 +42,15 @@ namespace OpenRCT2.API.Controllers
                 return svg;
             }
 
-            HttpWebRequest request = WebRequest.CreateHttp($"http://progressed.io/bar/{progress}");
-            using (HttpWebResponse response = await request.GetHttpResponseAsync())
+            var response = await _httpClient.GetAsync($"http://progressed.io/bar/{progress}");
+            if (!response.IsSuccessStatusCode)
             {
-                if (response.StatusCode != HttpStatusCode.OK)
-                {
-                    return null;
-                }
-
-                var responseStream = response.GetResponseStream();
-                svg = await responseStream.ReadToStringAsync();
-
-                CachedProgressImages.TryAdd(progress, svg);
-                return svg;
+                return null;
             }
+
+            svg = await response.Content.ReadAsStringAsync();
+            CachedProgressImages.TryAdd(progress, svg);
+            return svg;
         }
     }
 }
