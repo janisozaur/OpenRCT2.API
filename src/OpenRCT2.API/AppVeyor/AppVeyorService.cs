@@ -1,12 +1,19 @@
 ﻿using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
-using OpenRCT2.API.Extensions;
+using Newtonsoft.Json;
 
 namespace OpenRCT2.API.AppVeyor
 {
     public class AppVeyorService : IAppVeyorService
     {
         private const string ApiUrl = "https://ci.appveyor.com/api/";
+        private readonly HttpClient _httpClient;
+
+        public AppVeyorService(HttpClient httpClient)
+        {
+            _httpClient = httpClient;
+        }
 
         public class JAppVeyorBuildResponse
         {
@@ -26,16 +33,14 @@ namespace OpenRCT2.API.AppVeyor
 
         public async Task<JBuild> GetLastBuildAsync(string account, string project, string branch)
         {
-            string url = $"{ApiUrl}/projects/{account}/{project}";
+            string url = $"{ApiUrl}projects/{account}/{project}";
             if (branch != null)
             {
                 url += $"/branch/{branch}";
             }
 
-            HttpWebRequest request = WebRequest.CreateHttp(url);
-            request.ContentType = MimeTypes.ApplicationJson;
-
-            var response = await request.GetJsonResponseAsync<JAppVeyorBuildResponse>();
+            var responseJson = await _httpClient.GetStringAsync(url);
+            var response = JsonConvert.DeserializeObject<JAppVeyorBuildResponse>(responseJson);
             return response.build;
         }
 
@@ -55,11 +60,9 @@ namespace OpenRCT2.API.AppVeyor
 
         public async Task<JMessage[]> GetMessagesAsync(string jobId)
         {
-            string url = $"{ApiUrl}/buildjobs/{jobId}/messages";
-            HttpWebRequest request = WebRequest.CreateHttp(url);
-            request.ContentType = MimeTypes.ApplicationJson;
-
-            var response = await request.GetJsonResponseAsync<JAppVeyorMessagesResponse>();
+            string url = $"{ApiUrl}buildjobs/{jobId}/messages";
+            var responseJson = await _httpClient.GetStringAsync(url);
+            var response = JsonConvert.DeserializeObject<JAppVeyorMessagesResponse>(responseJson);
             return response.list;
         }
     }
