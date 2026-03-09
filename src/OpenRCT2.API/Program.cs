@@ -2,6 +2,7 @@
 using System.IO;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using OpenRCT2.API.Configuration;
 using Serilog;
 using Serilog.Core;
@@ -20,7 +21,7 @@ namespace OpenRCT2.API
             try
             {
                 Log.Information("Starting web host");
-                BuildWebHost(args).Run();
+                BuildHost(args).Run();
                 return 0;
             }
             catch (Exception ex)
@@ -55,7 +56,7 @@ namespace OpenRCT2.API
             return logConfig.CreateLogger();
         }
 
-        private static IWebHost BuildWebHost(string[] args)
+        private static IHost BuildHost(string[] args)
         {
             // Build / load configuration
             var config = BuildConfiguration();
@@ -68,17 +69,21 @@ namespace OpenRCT2.API
                 Log.Logger.Warning("No configuration found for api");
             }
 
-            var hostBuilder = new WebHostBuilder()
-                .UseStartup<Startup>()
-                .UseKestrel()
-                .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseConfiguration(config)
-                .UseSerilog();
+            var hostBuilder = Host.CreateDefaultBuilder(args)
+                .UseSerilog()
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder
+                        .UseStartup<Startup>()
+                        .UseKestrel()
+                        .UseContentRoot(Directory.GetCurrentDirectory())
+                        .UseConfiguration(config);
 
-            if (apiConfig?.Bind != null)
-            {
-                hostBuilder.UseUrls(apiConfig.Bind);
-            }
+                    if (apiConfig?.Bind != null)
+                    {
+                        webBuilder.UseUrls(apiConfig.Bind);
+                    }
+                });
 
             return hostBuilder.Build();
         }
