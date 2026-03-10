@@ -10,8 +10,8 @@ See instructions at https://www.microsoft.com/net/core
 ## Docker
 ```
 cd=`pwd`
-docker pull docker pull mcr.microsoft.com/dotnet/sdk:6.0
-docker run -v "$(pwd)":/work -w /work -it -p 5000:80 mcr.microsoft.com/dotnet/sdk:6.0 bash
+docker pull mcr.microsoft.com/dotnet/sdk:10.0
+docker run -v "$(pwd)":/work -w /work -it -p 5000:80 mcr.microsoft.com/dotnet/sdk:10.0 bash
 ```
 
 ## Building / Launching
