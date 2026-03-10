@@ -5,11 +5,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 6.0.x
+        dotnet-version: 10.0.x
     - name: Restore packages
       run: dotnet restore
     - name: Build
@@ -27,7 +27,7 @@ jobs:
       fullbranch: ${{ github.ref }}
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Build image
       run: docker build -t "$imageName" .
     - name: Push image
