@@ -2,6 +2,7 @@
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Threading;
 using OpenRCT2.DB.Abstractions;
@@ -13,15 +14,15 @@ namespace OpenRCT2.API.Services
     {
         private static readonly TimeSpan _queryWait = TimeSpan.FromHours(6);
 
-        private readonly IRctObjectRepository _rctObjectRepo;
+        private readonly IServiceScopeFactory _scopeFactory;
         private readonly HttpClient _httpClient;
         private readonly ILogger<NeDesignsService> _logger;
         private DateTime _lastQueryCheck;
         private AsyncSemaphore _querySemaphore = new AsyncSemaphore(1);
 
-        public NeDesignsService(IRctObjectRepository rctObjectRepo, HttpClient httpClient, ILogger<NeDesignsService> logger)
+        public NeDesignsService(IServiceScopeFactory scopeFactory, HttpClient httpClient, ILogger<NeDesignsService> logger)
         {
-            _rctObjectRepo = rctObjectRepo;
+            _scopeFactory = scopeFactory;
             _httpClient = httpClient;
             _logger = logger;
         }
@@ -40,8 +41,11 @@ namespace OpenRCT2.API.Services
             {
                 _lastQueryCheck = DateTime.UtcNow;
 
+                using var scope = _scopeFactory.CreateScope();
+                var rctObjectRepo = scope.ServiceProvider.GetRequiredService<IRctObjectRepository>();
+
                 // Find maximum NeDesigns ID
-                var obj = await _rctObjectRepo.GetLegacyObjectWithHighestNeIdAsync();
+                var obj = await rctObjectRepo.GetLegacyObjectWithHighestNeIdAsync();
                 var neId = obj == null ? 1 : obj.NeDesignId;
                 var fails = 0;
                 while (fails < 3)
@@ -56,7 +60,7 @@ namespace OpenRCT2.API.Services
                         if (match.Success)
                         {
                             var name = match.Groups[1].Value.ToUpperInvariant();
-                            await _rctObjectRepo.UpdateLegacyAsync(
+                            await rctObjectRepo.UpdateLegacyAsync(
                                 new LegacyRctObject() { NeDesignId = neId, Name = name });
                             _logger.LogInformation($"Adding new object: #{neId} [{name}]");
                         }
