@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -60,13 +61,35 @@ namespace OpenRCT2.API
         {
             // Build / load configuration
             var config = BuildConfiguration();
-            var apiConfig = config
-                .GetSection("api")
-                .Get<ApiConfig>();
+            var apiSection = config.GetSection("api");
+            var apiConfig = apiSection.Get<ApiConfig>();
+            var configFilePath = GetConfigFilePath();
 
-            if (apiConfig == null)
+            if (!apiSection.Exists())
             {
-                Log.Logger.Warning("No configuration found for api");
+                Log.Logger.Warning(
+                    "No 'api' configuration section was found. Expected file: {ConfigFilePath}. Expected keys: api.bind, api.baseUrl, api.passwordServerSalt, api.authTokenSecret.",
+                    configFilePath);
+            }
+            else
+            {
+                var missingApiKeys = new[]
+                {
+                    (Key: "api.bind", Value: apiConfig?.Bind),
+                    (Key: "api.passwordServerSalt", Value: apiConfig?.PasswordServerSalt),
+                    (Key: "api.authTokenSecret", Value: apiConfig?.AuthTokenSecret)
+                }
+                .Where(x => string.IsNullOrWhiteSpace(x.Value))
+                .Select(x => x.Key)
+                .ToArray();
+
+                if (missingApiKeys.Length > 0)
+                {
+                    Log.Logger.Warning(
+                        "Missing API configuration values: {MissingKeys}. Expected file: {ConfigFilePath}.",
+                        string.Join(", ", missingApiKeys),
+                        configFilePath);
+                }
             }
 
             var hostBuilder = Host.CreateDefaultBuilder(args)
@@ -92,14 +115,29 @@ namespace OpenRCT2.API
         {
             var config = new ConfigurationBuilder();
             string configDirectory = GetConfigDirectory();
+            var configFilePath = GetConfigFilePath();
             if (Directory.Exists(configDirectory))
             {
                 config
                     .SetBasePath(configDirectory)
                     .AddYamlFile(ConfigFileName, optional: true, reloadOnChange: true);
+
+                if (!File.Exists(configFilePath))
+                {
+                    Log.Logger.Warning("Configuration directory exists, but config file was not found: {ConfigFilePath}", configFilePath);
+                }
+            }
+            else
+            {
+                Log.Logger.Warning("Configuration directory does not exist: {ConfigDirectory}", configDirectory);
             }
             config.AddEnvironmentVariables();
             return config.Build();
+        }
+
+        private static string GetConfigFilePath()
+        {
+            return Path.Combine(GetConfigDirectory(), ConfigFileName);
         }
 
         private static string GetConfigDirectory()

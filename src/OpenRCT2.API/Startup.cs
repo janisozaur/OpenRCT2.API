@@ -95,9 +95,22 @@ namespace OpenRCT2.API
             }
 
             // Setup / connect to the database
-            if (dbOptions.Value.Host == null)
+            var missingDatabaseKeys = new[]
             {
-                logger.LogWarning("No database has been configured");
+                (Key: "database.host", Env: "database__host", Value: dbOptions.Value.Host),
+                (Key: "database.user", Env: "database__user", Value: dbOptions.Value.User),
+                (Key: "database.password", Env: "database__password", Value: dbOptions.Value.Password),
+                (Key: "database.name", Env: "database__name", Value: dbOptions.Value.Name)
+            }
+            .Where(x => string.IsNullOrWhiteSpace(x.Value))
+            .ToArray();
+
+            if (missingDatabaseKeys.Length > 0)
+            {
+                logger.LogWarning(
+                    "Database configuration is incomplete. Missing keys: {MissingKeys}. You can set them in the 'database' section of ~/.openrct2/api.config.yml or via env vars: {EnvKeys}.",
+                    string.Join(", ", missingDatabaseKeys.Select(x => x.Key)),
+                    string.Join(", ", missingDatabaseKeys.Select(x => x.Env)));
             }
             else
             {
