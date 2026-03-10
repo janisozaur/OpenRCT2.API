@@ -30,13 +30,11 @@ namespace OpenRCT2.API
 
         public IConfiguration Configuration { get; }
         public IWebHostEnvironment HostingEnvironment { get; }
-        public ILogger Logger { get; }
 
-        public Startup(IConfiguration configuration, IWebHostEnvironment env, ILoggerFactory loggerFactory)
+        public Startup(IConfiguration configuration, IWebHostEnvironment env)
         {
             Configuration = configuration;
             HostingEnvironment = env;
-            Logger = loggerFactory.CreateLogger<Startup>();
         }
 
         public void ConfigureServices(IServiceCollection services)
@@ -54,9 +52,9 @@ namespace OpenRCT2.API
             services.AddSingleton<ILocalisationService, LocalisationService>();
             services.AddSingleton<Emailer>();
             services.AddSingleton<GoogleRecaptchaService>();
-            services.AddSingleton<NeDesignsService>();
-            services.AddSingleton<UserAccountService>();
-            services.AddSingleton<UserAuthenticationService>();
+            services.AddScoped<NeDesignsService>();
+            services.AddScoped<UserAccountService>();
+            services.AddScoped<UserAuthenticationService>();
 
             if (!HostingEnvironment.IsTesting())
             {
@@ -81,7 +79,8 @@ namespace OpenRCT2.API
             IServiceProvider serviceProvider,
             IApplicationBuilder app,
             IWebHostEnvironment env,
-            IOptions<DBOptions> dbOptions)
+            IOptions<DBOptions> dbOptions,
+            ILogger<Startup> logger)
         {
             // Use X-Forwarded-For header for client IP address
             app.UseForwardedHeaders(
@@ -98,7 +97,7 @@ namespace OpenRCT2.API
             // Setup / connect to the database
             if (dbOptions.Value.Host == null)
             {
-                Logger.LogWarning("No database has been configured");
+                logger.LogWarning("No database has been configured");
             }
             else
             {
@@ -111,7 +110,7 @@ namespace OpenRCT2.API
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogError(ex, "An error occured while setting up the database service");
+                    logger.LogError(ex, "An error occured while setting up the database service");
                 }
             }
 
