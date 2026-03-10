@@ -102,7 +102,7 @@ namespace OpenRCT2.API
                         .UseContentRoot(Directory.GetCurrentDirectory())
                         .UseConfiguration(config);
 
-                    if (apiConfig?.Bind != null)
+                    if (!string.IsNullOrWhiteSpace(apiConfig?.Bind))
                     {
                         webBuilder.UseUrls(apiConfig.Bind);
                     }
